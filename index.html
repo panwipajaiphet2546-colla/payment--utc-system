@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจสอบชำระเงินวิทยาลัยเทคนิคอุบลราชธานี งานทะเบียน</title>
+    <title>ระบบตรวจสอบชำระเงิน V.6 - งานทะเบียน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,7 +38,7 @@
                 <div class="w-24 h-24 mx-auto rounded-full bg-[#9D1E36] text-white flex items-center justify-center text-4xl mb-4 shadow-lg">
                     <i class="fas fa-shield-alt"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900">ระบบฐานข้อมูลงานทะเบียน (V.ใหม่ล่าสุด)</h2>
+                <h2 class="text-2xl font-bold text-gray-900">ระบบฐานข้อมูลงานทะเบียน</h2>
                 <p class="text-sm text-gray-500 mt-2">กรุณายืนยันตัวตนเพื่อเข้าสู่ระบบจัดการข้อมูล</p>
             </div>
             
@@ -69,7 +69,7 @@
                 <div class="w-10 h-10 rounded-full bg-white text-[#9D1E36] flex items-center justify-center font-bold">
                     UTC
                 </div>
-                <h1 class="text-xl font-bold tracking-wide hidden sm:block">ระบบตรวจสอบชำระเงิน V.4</h1>
+                <h1 class="text-xl font-bold tracking-wide hidden sm:block">ระบบตรวจสอบชำระเงิน V.6</h1>
                 <h1 class="text-lg font-bold tracking-wide sm:hidden">ตรวจสอบชำระเงิน</h1>
             </div>
             <div class="flex items-center space-x-3 text-sm">
@@ -368,7 +368,7 @@
         // ==========================================
 
         function loadDatabase() {
-            const storedData = localStorage.getItem('collegeStudentDB_v3');
+            const storedData = localStorage.getItem('collegeStudentDB_v6');
             if (storedData) {
                 dbData = JSON.parse(storedData);
             } else {
@@ -553,58 +553,77 @@
                             if (json.length < 2) return;
 
                             json.forEach((row, index) => {
-                                if (index < 1) return; // ข้าม Header (สมมติอยู่บรรทัดแรก)
+                                // ข้าม Header (ตรวจสอบบรรทัดแรกๆ ที่ไม่มีตัวเลข)
+                                let hasNumber = row.some(cell => /\d/.test(String(cell)));
+                                if (!hasNumber) return;
                                 
-                                // สมมติ Column: 0=ลำดับ, 1=รหัสปชช, 2=รหัสนศ, 3=ชื่อ, 4=สาขา, 5=ห้อง, 6=วันที่, 7=ใบเสร็จ, 8=ยอดเงิน
-                                // *ปรับ Index อ้างอิงตามโครงสร้างไฟล์จริง*
+                                let idStr = null;
+                                // 1. Scan to find an ID (10-13 digits)
+                                for(let i=0; i<row.length; i++) {
+                                    if(row[i]) {
+                                        let val = String(row[i]).replace(/\s/g, '').replace(/-/g, '');
+                                        if(val.length >= 10 && val.length <= 13 && /^\d+$/.test(val)) {
+                                            idStr = val;
+                                            break;
+                                        }
+                                    }
+                                }
                                 
-                                // ค้นหารหัสนักศึกษา (ลองหาจากช่องต่างๆ ที่น่าจะเป็น)
-                                let rawId = row[2] || row[1] || row[3]; 
-                                if(!rawId) return;
-
-                                let idStr = String(rawId).replace(/\s/g, ''); // ลบช่องว่าง
-                                if(idStr.length < 5) return; // กรองพวกไม่ใช่รหัส
+                                if(!idStr) return;
 
                                 let studentIndex = dbData.findIndex(s => s.id === idStr);
-                                
-                                // ดึงข้อมูลพื้นฐานจากไฟล์ ถ้ามี
-                                let name = row[3] ? String(row[3]).trim() : (row[4] ? String(row[4]).trim() : 'ไม่ระบุชื่อ');
-                                let major = row[4] ? String(row[4]).trim() : (row[5] ? String(row[5]).trim() : 'นำเข้าใหม่');
-                                let room = row[5] ? String(row[5]).trim() : (row[6] ? String(row[6]).trim() : '-');
-                                
                                 if(studentIndex === -1) {
-                                    // สร้างใหม่
-                                    dbData.push({
-                                        id: idStr,
-                                        name: name,
-                                        major: major,
-                                        year: '-',
-                                        room: room,
-                                        status: 'ยังไม่ชำระเงิน',
-                                        eduStatus: 'กำลังศึกษาอยู่'
-                                    });
-                                    studentIndex = dbData.length - 1;
-                                    newCount++;
+                                    studentIndex = dbData.findIndex(s => s.nationalId === idStr);
                                 }
-
-                                // อัปเดตข้อมูลการจ่ายเงิน (หาข้อมูลที่มีตัวเลข/วันที่)
-                                let student = dbData[studentIndex];
                                 
-                                let rawReceipt = row[7] || row[6] || null;
-                                let rawDate = row[6] || row[1] || sheetName;
-                                let rawAmount = row[8] || row[7] || null;
-                                
-                                // ถ้ามีข้อมูลใบเสร็จหรือยอดเงิน ถือว่าจ่ายแล้ว
-                                if (rawReceipt || rawAmount) {
-                                    // ป้องกันการอัปเดตทับถ้าเคยจ่ายแล้วและ Excel นี้ไม่มีค่า
+                                if(studentIndex !== -1) {
+                                    let student = dbData[studentIndex];
+                                    
+                                    // สันนิษฐานว่าการที่มีรายชื่ออยู่ในไฟล์ของฝ่ายการเงิน แปลว่าชำระเงินแล้ว
+                                    // จึงทำการอัปเดตสถานะทันที (ถ้ายังไม่เคยอัปเดต)
                                     if(student.status !== 'ชำระเงินแล้ว') {
                                         student.status = 'ชำระเงินแล้ว';
-                                        student.receiptNo = rawReceipt ? String(rawReceipt).trim() : '-';
-                                        student.receiptDate = rawDate ? String(rawDate).trim() : sheetName;
-                                        student.amount = rawAmount ? String(rawAmount).trim() : '2,700';
+                                        
+                                        // พยายามหาจำนวนเงิน (ตัวเลขหลักพัน)
+                                        let amount = '2,700';
+                                        for(let i=0; i<row.length; i++) {
+                                            let cell = String(row[i]||'').replace(/,/g, '').trim();
+                                            if(!isNaN(cell) && Number(cell) >= 1000 && Number(cell) <= 20000) {
+                                                amount = Number(cell).toLocaleString();
+                                            }
+                                        }
+                                        student.amount = amount;
+                                        student.receiptDate = new Date().toLocaleDateString('th-TH');
+                                        student.receiptNo = 'อ้างอิงไฟล์ Excel';
                                         student.lastUpdated = new Date().toLocaleString();
+                                        
                                         updatedCount++;
                                     }
+                                } else {
+                                    // ไม่พบรายชื่อในระบบเลย
+                                    let name = 'นักศึกษาใหม่';
+                                    for(let i=0; i<row.length; i++) {
+                                        let cell = String(row[i]||'').trim();
+                                        if(cell.length > 5 && isNaN(cell) && !cell.includes('/')) {
+                                            name = cell;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    dbData.unshift({
+                                        id: idStr,
+                                        name: name,
+                                        major: 'จากไฟล์การเงิน',
+                                        year: '-',
+                                        room: '-',
+                                        status: 'ชำระเงินแล้ว',
+                                        amount: '2,700',
+                                        receiptDate: new Date().toLocaleDateString('th-TH'),
+                                        receiptNo: 'อ้างอิงไฟล์ Excel',
+                                        eduStatus: 'กำลังศึกษาอยู่',
+                                        lastUpdated: new Date().toLocaleString()
+                                    });
+                                    newCount++;
                                 }
                             });
                         });

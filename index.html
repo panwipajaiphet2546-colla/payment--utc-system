@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจสอบสถานะการชำระเงิน - งานทะเบียน</title>
+    <title>ระบบตรวจสอบชำระเงิน V.4 - งานทะเบียน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,7 +38,7 @@
                 <div class="w-24 h-24 mx-auto rounded-full bg-[#9D1E36] text-white flex items-center justify-center text-4xl mb-4 shadow-lg">
                     <i class="fas fa-shield-alt"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900">ระบบฐานข้อมูลงานทะเบียน</h2>
+                <h2 class="text-2xl font-bold text-gray-900">ระบบฐานข้อมูลงานทะเบียน (V.ใหม่ล่าสุด)</h2>
                 <p class="text-sm text-gray-500 mt-2">กรุณายืนยันตัวตนเพื่อเข้าสู่ระบบจัดการข้อมูล</p>
             </div>
             
@@ -69,7 +69,7 @@
                 <div class="w-10 h-10 rounded-full bg-white text-[#9D1E36] flex items-center justify-center font-bold">
                     UTC
                 </div>
-                <h1 class="text-xl font-bold tracking-wide hidden sm:block">ระบบตรวจสอบสถานะการชำระเงิน</h1>
+                <h1 class="text-xl font-bold tracking-wide hidden sm:block">ระบบตรวจสอบชำระเงิน V.4</h1>
                 <h1 class="text-lg font-bold tracking-wide sm:hidden">ตรวจสอบชำระเงิน</h1>
             </div>
             <div class="flex items-center space-x-3 text-sm">
@@ -335,9 +335,6 @@
             } else {
                 document.getElementById('loginSection').classList.remove('hidden-section');
                 document.getElementById('appSection').classList.add('hidden-section');
-            } else {
-                document.getElementById('loginSection').classList.remove('hidden-section');
-                document.getElementById('appSection').classList.add('hidden-section');
             }
         };
 
@@ -374,8 +371,6 @@
             const storedData = localStorage.getItem('collegeStudentDB_v3');
             if (storedData) {
                 dbData = JSON.parse(storedData);
-            } else {
-                dbData = JSON.parse(JSON.stringify(initialMockData));
             } else {
                 // โหลดข้อมูลเริ่มต้น 3,144 รายชื่อ
                 dbData = JSON.parse(JSON.stringify(initialMockData)); 
